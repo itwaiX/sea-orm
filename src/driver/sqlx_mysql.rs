@@ -190,6 +190,28 @@ impl SqlxMySqlPoolConnection {
             )))
         }
     }
+    /// Create a TiDB transaction(uncommit)
+    #[instrument(level = "trace", skip(callback))]
+    pub async fn transaction_tidb<F, T, E>(&self, callback: F) -> Result<T, TransactionError<E>>
+        where
+            F: for<'b> FnOnce(
+                &'b DatabaseTransaction,
+            ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'b>>
+            + Send,
+            T: Send,
+            E: std::error::Error + Send,
+    {
+        if let Ok(conn) = self.pool.acquire().await {
+            let transaction = DatabaseTransaction::new_mysql(conn, self.metric_callback.clone())
+                .await
+                .map_err(|e| TransactionError::Connection(e))?;
+            transaction.run_uncommit(callback).await
+        } else {
+            Err(TransactionError::Connection(DbErr::Query(
+                "Failed to acquire connection from pool.".to_owned(),
+            )))
+        }
+    }
 
     pub(crate) fn set_metric_callback<F>(&mut self, callback: F)
     where

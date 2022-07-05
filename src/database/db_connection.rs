@@ -215,7 +215,7 @@ impl TransactionTrait for DatabaseConnection {
     {
         match self {
             #[cfg(feature = "sqlx-mysql")]
-            DatabaseConnection::SqlxMySqlPoolConnection(conn) => conn.transaction(_callback).await,
+            DatabaseConnection::SqlxMySqlPoolConnection(conn) => conn.transaction_tidb(_callback).await,
             #[cfg(feature = "sqlx-postgres")]
             DatabaseConnection::SqlxPostgresPoolConnection(conn) => {
                 conn.transaction(_callback).await

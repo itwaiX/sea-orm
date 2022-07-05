@@ -142,6 +142,27 @@ impl DatabaseTransaction {
         res
     }
 
+    /// Runs a transaction until complete but does not actively commit
+    /// encountering an error if it fails
+    #[instrument(level = "trace", skip(callback))]
+    pub(crate) async fn run_uncommit<F, T, E>(self, callback: F) -> Result<T, TransactionError<E>>
+        where
+            F: for<'b> FnOnce(
+                &'b DatabaseTransaction,
+            ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'b>>
+            + Send,
+            T: Send,
+            E: std::error::Error + Send,
+    {
+        let res = callback(&self).await.map_err(TransactionError::Transaction);
+        if res.is_err() {
+            self.rollback()
+                .await
+                .map_err(TransactionError::Connection)?;
+        }
+        res
+    }
+
     /// Commit a transaction atomically
     #[instrument(level = "trace")]
     pub async fn commit(mut self) -> Result<(), DbErr> {
