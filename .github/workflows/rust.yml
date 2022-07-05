@@ -1,7 +1,7 @@
 # GitHub Actions with Conditional Job Running Based on Commit Message
 # 
-# --------------------------------------------------------------------------------
 # 
+# --------------------------------------------------------------------------------
 # Following jobs will always run
 # 
 #   - `clippy`
@@ -526,6 +526,63 @@ jobs:
             Cargo.lock
             target
           key: ${{ github.sha }}-${{ github.run_id }}-${{ runner.os }}-mysql-${{ matrix.runtime }}-${{ matrix.tls }}
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: >
+            --test '*'
+            --features default,sqlx-mysql,runtime-${{ matrix.runtime }}-${{ matrix.tls }}
+
+  tidb:
+    name: TiDB
+    needs:
+      - init
+      - compile-mysql
+    if: >-
+      ${{
+        needs.init.outputs.run-partial == 'false' ||
+        (needs.init.outputs.run-partial == 'true' && needs.init.outputs.run-mysql == 'true')
+      }}
+    runs-on: ubuntu-20.04
+    env:
+      DATABASE_URL: "mysql://root:@localhost:4000"
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [v6.1.0, v5.4.1]
+        runtime: [actix]
+        tls: [native-tls]
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            Cargo.lock
+            target
+          key: ${{ github.sha }}-${{ github.run_id }}-${{ runner.os }}-mysql-${{ matrix.runtime }}-${{ matrix.tls }}
+
+      - name: Install tiup
+        run: curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
+        
+      - name: Source
+        run: source /home/runner/.profile
+
+      - name: Run tiup
+        run: RUNNER_TRACKING_ID="" && (nohup /home/runner/.tiup/bin/tiup playground ${{ matrix.version }} > nohup.txt &)
+
+      - name: Wait TiDB ready
+        run: sleep 15s && cat nohup.txt
+        shell: bash
 
       - uses: actions-rs/cargo@v1
         with:
