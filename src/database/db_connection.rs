@@ -215,6 +215,38 @@ impl TransactionTrait for DatabaseConnection {
     {
         match self {
             #[cfg(feature = "sqlx-mysql")]
+            DatabaseConnection::SqlxMySqlPoolConnection(conn) => conn.transaction(_callback).await,
+            #[cfg(feature = "sqlx-postgres")]
+            DatabaseConnection::SqlxPostgresPoolConnection(conn) => {
+                conn.transaction(_callback).await
+            }
+            #[cfg(feature = "sqlx-sqlite")]
+            DatabaseConnection::SqlxSqlitePoolConnection(conn) => conn.transaction(_callback).await,
+            #[cfg(feature = "mock")]
+            DatabaseConnection::MockDatabaseConnection(conn) => {
+                let transaction = DatabaseTransaction::new_mock(Arc::clone(conn), None)
+                    .await
+                    .map_err(TransactionError::Connection)?;
+                transaction.run(_callback).await
+            }
+            DatabaseConnection::Disconnected => panic!("Disconnected"),
+        }
+    }
+
+    /// Execute functions within a transaction and do not actively commit.
+    /// If the function returns an error, the transaction will be rolled back. If it does not return an error, the transaction will be committed.
+    #[instrument(level = "trace", skip(_callback))]
+    async fn transaction_uncommit<F, T, E>(&self, _callback: F) -> Result<T, TransactionError<E>>
+        where
+            F: for<'c> FnOnce(
+                &'c DatabaseTransaction,
+            ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'c>>
+            + Send,
+            T: Send,
+            E: std::error::Error + Send,
+    {
+        match self {
+            #[cfg(feature = "sqlx-mysql")]
             DatabaseConnection::SqlxMySqlPoolConnection(conn) => conn.transaction_tidb(_callback).await,
             #[cfg(feature = "sqlx-postgres")]
             DatabaseConnection::SqlxPostgresPoolConnection(conn) => {
@@ -232,7 +264,11 @@ impl TransactionTrait for DatabaseConnection {
             DatabaseConnection::Disconnected => panic!("Disconnected"),
         }
     }
+
+
 }
+
+
 
 #[cfg(feature = "mock")]
 impl DatabaseConnection {

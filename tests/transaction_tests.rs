@@ -690,15 +690,13 @@ pub async fn transaction_nested() {
 #[sea_orm_macros::test]
 #[cfg(any(
 feature = "sqlx-mysql",
-feature = "sqlx-sqlite",
-feature = "sqlx-postgres"
 ))]
-pub async fn transaction_optimistic() {
-    let ctx = TestContext::new("transaction_optimistic_test").await;
+pub async fn transaction_autocommit_tidb() {
+    let ctx = TestContext::new("transaction_autocommit_tidb_test").await;
     create_tables(&ctx.db).await.unwrap();
 
     ctx.db
-        .transaction::<_, _, DbErr>(|txn| {
+        .transaction_uncommit::<_, _, DbErr>(|txn| {
             Box::pin(async move {
                 let _ = bakery::ActiveModel {
                     name: Set("SeaSide Bakery".to_owned()),

@@ -8,6 +8,7 @@ use futures::lock::Mutex;
 #[cfg(feature = "sqlx-dep")]
 use sqlx::{pool::PoolConnection, TransactionManager};
 use std::{future::Future, pin::Pin, sync::Arc};
+use std::error::Error;
 use tracing::instrument;
 
 // a Transaction is just a sugar for a connection where START TRANSACTION has been executed
@@ -419,6 +420,19 @@ impl TransactionTrait for DatabaseTransaction {
                 &'c DatabaseTransaction,
             ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'c>>
             + Send,
+        T: Send,
+        E: std::error::Error + Send,
+    {
+        let transaction = self.begin().await.map_err(TransactionError::Connection)?;
+        transaction.run(_callback).await
+    }
+
+    async fn transaction_uncommit<F, T, E>(&self, callback: F) -> Result<T, TransactionError<E>>
+    where
+        F: for<'c> FnOnce(
+            &'c DatabaseTransaction,
+        ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'c>>
+        + Send,
         T: Send,
         E: std::error::Error + Send,
     {
