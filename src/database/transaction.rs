@@ -408,30 +408,31 @@ impl TransactionTrait for DatabaseTransaction {
             self.backend,
             self.metric_callback.clone(),
         )
-        .await
+            .await
     }
 
     /// Execute the function inside a transaction.
     /// If the function returns an error, the transaction will be rolled back. If it does not return an error, the transaction will be committed.
     #[instrument(level = "trace", skip(_callback))]
     async fn transaction<F, T, E>(&self, _callback: F) -> Result<T, TransactionError<E>>
-    where
-        F: for<'c> FnOnce(
+        where
+            F: for<'c> FnOnce(
                 &'c DatabaseTransaction,
-            ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'c>>
+            ) -> Pin<Box<dyn Future<Output=Result<T, E>> + Send + 'c>>
             + Send,
-        T: Send,
-        E: std::error::Error + Send,
+            T: Send,
+            E: std::error::Error + Send,
     {
         let transaction = self.begin().await.map_err(TransactionError::Connection)?;
         transaction.run(_callback).await
     }
 
-    async fn transaction_uncommit<F, T, E>(&self, callback: F) -> Result<T, TransactionError<E>>
+    #[instrument(level = "trace", skip(_callback))]
+    async fn transaction_uncommit<F, T, E>(&self, _callback: F) -> Result<T, TransactionError<E>>
     where
         F: for<'c> FnOnce(
             &'c DatabaseTransaction,
-        ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'c>>
+        ) -> Pin<Box<dyn Future<Output=Result<T, E>> + Send + 'c>>
         + Send,
         T: Send,
         E: std::error::Error + Send,

@@ -690,6 +690,8 @@ pub async fn transaction_nested() {
 #[sea_orm_macros::test]
 #[cfg(any(
 feature = "sqlx-mysql",
+feature = "sqlx-sqlite",
+feature = "sqlx-postgres"
 ))]
 pub async fn transaction_autocommit_tidb() {
     let ctx = TestContext::new("transaction_autocommit_tidb_test").await;
