@@ -1,4 +1,5 @@
 pub mod common;
+pub use std::thread;
 
 pub use common::{bakery_chain::*, setup::*, TestContext};
 use pretty_assertions::assert_eq;
@@ -732,4 +733,45 @@ pub async fn transaction_autocommit_tidb() {
     ctx.delete().await;
 }
 
+#[sea_orm_macros::test]
+#[cfg(any(
+feature = "sqlx-mysql"
+))]
+pub async fn transaction_causal_consistency_tidb() {
+    let ctx = TestContext::new("transaction_causal_consistency_tidb_test").await;
+    create_tables(&ctx.db).await.unwrap();
 
+    ctx.db
+        .transaction::<_, _, DbErr>(|txn| {
+            Box::pin(async move {
+                let _ = bakery::ActiveModel {
+                    name: Set("SeaSide Bakery".to_owned()),
+                    profit_margin: Set(10.4),
+                    ..Default::default()
+                }
+                    .save(txn)
+                    .await?;
+
+                let _ = bakery::ActiveModel {
+                    name: Set("Top Bakery".to_owned()),
+                    profit_margin: Set(15.0),
+                    ..Default::default()
+                }
+                    .save(txn)
+                    .await?;
+
+                let bakeries = Bakery::find()
+                    .filter(bakery::Column::Name.contains("Bakery"))
+                    .all(txn)
+                    .await?;
+
+                assert_eq!(bakeries.len(), 2);
+
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+
+    ctx.delete().await;
+}
