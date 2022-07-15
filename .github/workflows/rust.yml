@@ -581,7 +581,7 @@ jobs:
         run: RUNNER_TRACKING_ID="" && (nohup /home/runner/.tiup/bin/tiup playground ${{ matrix.version }} > nohup.txt &)
 
       - name: Wait TiDB ready
-        run: sleep 15s && cat nohup.txt
+        run: while ! mysql -h 127.0.0.1 -P 4000 -u root -e "SELECT VERSION();"; do sleep 3; done
         shell: bash
 
       - uses: actions-rs/cargo@v1

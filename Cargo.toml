@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/sea-orm"
 repository = "https://github.com/SeaQL/sea-orm"
 categories = ["database"]
-keywords = ["async", "orm", "mysql", "postgres", "sqlite"]
+keywords = ["async", "orm", "mysql", "postgres", "sqlite", "tidb"]
 
 [package.metadata.docs.rs]
 features = ["default", "sqlx-all", "mock", "runtime-async-std-native-tls"]
@@ -77,6 +77,7 @@ sqlx-all = ["sqlx-mysql", "sqlx-postgres", "sqlx-sqlite"]
 sqlx-mysql = ["sqlx-dep", "sea-query/sqlx-mysql", "sqlx/mysql"]
 sqlx-postgres = ["sqlx-dep", "sea-query/sqlx-postgres", "sqlx/postgres"]
 sqlx-sqlite = ["sqlx-dep", "sea-query/sqlx-sqlite", "sqlx/sqlite"]
+sqlx-tidb = ["sqlx-dep", "sea-query/sqlx-mysql", "sqlx/mysql"]
 runtime-async-std = []
 runtime-async-std-native-tls = [
     "sqlx/runtime-async-std-native-tls",

@@ -692,7 +692,8 @@ pub async fn transaction_nested() {
 #[cfg(any(
 feature = "sqlx-mysql",
 feature = "sqlx-sqlite",
-feature = "sqlx-postgres"
+feature = "sqlx-postgres",
+feature = "sqlx-tidb"
 ))]
 pub async fn transaction_autocommit_tidb() {
     let ctx = TestContext::new("transaction_autocommit_tidb_test").await;

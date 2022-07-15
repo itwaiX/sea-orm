@@ -4,6 +4,8 @@ mod mock;
 mod sqlx_common;
 #[cfg(feature = "sqlx-mysql")]
 pub(crate) mod sqlx_mysql;
+#[cfg(feature = "sqlx-tidb")]
+pub(crate) mod sqlx_tidb;
 #[cfg(feature = "sqlx-postgres")]
 pub(crate) mod sqlx_postgres;
 #[cfg(feature = "sqlx-sqlite")]
@@ -15,6 +17,8 @@ pub use mock::*;
 pub use sqlx_common::*;
 #[cfg(feature = "sqlx-mysql")]
 pub use sqlx_mysql::*;
+#[cfg(feature = "sqlx-tidb")]
+pub use sqlx_tidb::*;
 #[cfg(feature = "sqlx-postgres")]
 pub use sqlx_postgres::*;
 #[cfg(feature = "sqlx-sqlite")]
